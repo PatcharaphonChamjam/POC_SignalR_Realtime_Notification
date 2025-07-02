@@ -33,7 +33,7 @@ namespace POC_SignalR_Realtime_Notification
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSignalR();
+            //services.AddSignalR();
             services.AddControllers(options =>
             {
                 options.Filters.Add(typeof(ErrorFilter));
@@ -50,8 +50,21 @@ namespace POC_SignalR_Realtime_Notification
             services.AddResponseCaching();
 
             // CORS *
-            services.AddCors(o => o.AddPolicy("MyPolicy", builder =>
-                builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+            //services.AddCors(o => o.AddPolicy("MyPolicy", builder =>
+            //    builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowFrontend", builder =>
+                {
+                    builder.WithOrigins("http://localhost:3000") // ต้องเฉพาะ origin ห้ามใช้ "*"
+                           .AllowAnyHeader()
+                           .AllowAnyMethod()
+                           .AllowCredentials(); // สำคัญมาก!!
+                });
+            });
+
+            services.AddSignalR();
 
             // HealthChecks
             services.AddHealthChecks()
@@ -99,6 +112,8 @@ namespace POC_SignalR_Realtime_Notification
 
             app.UseRouting();
 
+            app.UseCors("AllowFrontend"); // ต้องใส่ก่อน UseEndpoints
+
             app.UseHttpMetrics();
 
             app.UseResponseCaching();
@@ -126,10 +141,13 @@ namespace POC_SignalR_Realtime_Notification
                 });
 
                 endpoints.MapHub<NotificationHub>("/notificationhub");
-                endpoints.MapGet("/", async context =>
-                {
-                    await context.Response.WriteAsync("SignalR POC running...");
-                });
+                endpoints.MapControllers();
+
+                //endpoints.MapHub<NotificationHub>("/notificationhub");
+                //endpoints.MapGet("/", async context =>
+                //{
+                //    await context.Response.WriteAsync("SignalR POC running...");
+                //});
 
                 endpoints.MapMetrics();
             });
